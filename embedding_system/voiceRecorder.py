@@ -1,7 +1,15 @@
 import os
 import subprocess
 import time
-class VoiceRecorder:
+from embeddingSystem import RecorderBase, FileType
+from pathlib import Path
+
+class VoiceRecorder(RecorderBase):
+    
+    @property
+    def file_type(self) -> FileType:
+        return FileType.VOICE
+    
     def __init__(self, device='plughw:3', channels=4, rate=48000, format='S16_LE', output_dir='./Voice/upload'):
         super().__init__(output_dir)
         self.device = device
@@ -45,7 +53,7 @@ class VoiceRecorder:
         try:
             timestamp = time.strftime("%Y%m%d-%H%M%S")
             file_name = f"record_{timestamp}.wav"
-            output_path = os.path.join(self.output_dir, file_name)
+            output_path = self.output_dir / file_name
 
             while True:
                 user_input = input("輸入 's' 開始錄音，'e' 結束錄音，或 'q' 退出: ")
