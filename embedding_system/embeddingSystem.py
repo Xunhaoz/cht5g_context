@@ -1,7 +1,11 @@
 import os, requests
-from abc import ABC, abstractmethod 
+from abc import ABC, abstractmethod
+from dotenv import load_dotenv
+
+load_dotenv()
+
 class RecorderBase(ABC):
-    API_URL = "http://contest-5g.nevercareu.space"
+    API_URL = os.getenv("API_URL")
     VIDEO_URL = f"{API_URL}/video"
     VOICE_URL = f"{API_URL}/voice"
     
