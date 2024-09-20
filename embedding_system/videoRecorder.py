@@ -1,10 +1,13 @@
 import os
 import cv2, time
-from embeddingSystem import RecorderBase
+from embeddingSystem import RecorderBase, FileType
+from pathlib import Path
+
+
 class VideoRecorder(RecorderBase):
     @property
-    def file_type(self):
-        return 'video'  
+    def file_type(self) -> FileType:
+        return FileType.VIDEO 
     
     def __init__(self, output_dir='./Video/upload'):
         super().__init__(output_dir)
@@ -20,7 +23,7 @@ class VideoRecorder(RecorderBase):
         try:
             while True:
                 timestamp = time.strftime("%Y%m%d-%H%M%S")
-                output_path  = os.path.join(self.output_dir, f"record_{timestamp}.mp4")
+                output_path  = self.output_dir / f"record_{timestamp}.mp4"
                 out = cv2.VideoWriter(output_path, self.fourcc, self.fps,  (self.width,  self.height))
                 start_time = time.time()
 
