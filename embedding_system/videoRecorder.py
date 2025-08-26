@@ -1,12 +1,17 @@
 import os
 import cv2, time
-from embeddingSystem import RecorderBase
+from embeddingSystem import RecorderBase, FileType
+from pathlib import Path
+import threading
+import queue
+
+
 class VideoRecorder(RecorderBase):
     @property
-    def file_type(self):
-        return 'video'  
+    def file_type(self) -> FileType:
+        return FileType.VIDEO 
     
-    def __init__(self, output_dir='./Video/upload'):
+    def __init__(self, output_dir='~/Video/upload'):
         super().__init__(output_dir)
         # 設定攝影機
         self.cap = cv2.VideoCapture(0)
@@ -14,13 +19,29 @@ class VideoRecorder(RecorderBase):
         self.height = int(self.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         self.fps = 10
         self.fourcc = cv2.VideoWriter_fourcc(*'MJPG')
-    
+        self.upload_queue = queue.Queue()
+        self.upload_thread = threading.Thread(target=self.upload_worker, daemon=True)
+        self.upload_thread.start()
+
+    def upload_worker(self):
+        while True:
+            item = self.upload_queue.get()
+            if item is None:
+                break
+            output_path, timestamp = item
+            try:
+                self.upload_file(output_path, timestamp)
+                print(f"已上傳文件: {output_path}")
+            except Exception as e:
+                print(f"上傳文件 {output_path} 時出錯: {e}")
+            finally:
+                self.upload_queue.task_done()
     def start_interval_recording(self, recording_interval = 10):
         """開始錄影並每10秒保存到指定的目錄"""
         try:
             while True:
                 timestamp = time.strftime("%Y%m%d-%H%M%S")
-                output_path  = os.path.join(self.output_dir, f"record_{timestamp}.mp4")
+                output_path  = self.output_dir / f"record_{timestamp}.mp4"
                 out = cv2.VideoWriter(output_path, self.fourcc, self.fps,  (self.width,  self.height))
                 start_time = time.time()
 
@@ -36,7 +57,9 @@ class VideoRecorder(RecorderBase):
 
                 # 完成本次錄製，釋放VideoWriter資源
                 out.release()
-                self.upload_video(output_path)
+                self.upload_queue.put((output_path, timestamp))
+                print(f"已保存錄製文件: {output_path}")
+
 
         except KeyboardInterrupt:
             print("錄製中斷")
@@ -46,6 +69,10 @@ class VideoRecorder(RecorderBase):
             self.cap.release()
             out.release()
             cv2.destroyAllWindows()
+            # 發送終止信號給上傳線程
+            self.upload_queue.put(None)
+            # 等待上傳線程完成
+            self.upload_thread.join()
              
         def test_capture(self):
             #測試鏡頭有沒有在運作
@@ -64,7 +91,8 @@ class VideoRecorder(RecorderBase):
             cap.release()
             cv2.destroyAllWindows()
 
-# # 使用 VideoRecorder 類
-# if __name__ == "__main__":
-#     recorder = VideoRecorder()  
-#     recorder.start_interval_recording()
+# 使用 VideoRecorder 類
+if __name__ == "__main__":
+    recorder = VideoRecorder()  
+    recorder.set_place("中壢")
+    recorder.start_interval_recording()

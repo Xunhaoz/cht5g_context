@@ -1,8 +1,16 @@
 import os
 import subprocess
 import time
-class VoiceRecorder:
-    def __init__(self, device='plughw:3', channels=4, rate=48000, format='S16_LE', output_dir='./Voice/upload'):
+from embeddingSystem import RecorderBase, FileType
+from pathlib import Path
+
+class VoiceRecorder(RecorderBase):
+    
+    @property
+    def file_type(self) -> FileType:
+        return FileType.VOICE
+    
+    def __init__(self, device='plughw:3', channels=4, rate=48000, format='S16_LE', output_dir='~/Voice/upload'):
         super().__init__(output_dir)
         self.device = device
         self.channels = channels
@@ -45,7 +53,7 @@ class VoiceRecorder:
         try:
             timestamp = time.strftime("%Y%m%d-%H%M%S")
             file_name = f"record_{timestamp}.wav"
-            output_path = os.path.join(self.output_dir, file_name)
+            output_path = self.output_dir / file_name
 
             while True:
                 user_input = input("輸入 's' 開始錄音，'e' 結束錄音，或 'q' 退出: ")
@@ -53,7 +61,7 @@ class VoiceRecorder:
                     self.start_recording(output_path)
                 elif user_input == 'e':
                     self.stop_recording(output_path)
-                    self.upload_voice(output_path)
+                    self.upload_file(output_path, timestamp)
                     print('傳送完成')
                 elif user_input == 'q':
                     print("結束錄音會話")
@@ -69,6 +77,7 @@ class VoiceRecorder:
             #Connector.upload_voice(output_path)
             print("錄音資源已釋放")
 
-# if __name__ == "__main__":
-#     recorder = VoiceRecorder()
-#     recorder.start_recording_session()
+if __name__ == "__main__":
+    recorder = VoiceRecorder()
+    recorder.set_place("中壢")
+    recorder.start_recording_session()
